@@ -1,11 +1,11 @@
-import streamlit as st
-import pandas as pd
-import sqlite3
-from datetime import datetime
-from fpdf import FPDF
 import ast
 import base64
+from datetime import datetime
 import io
+import sqlite3
+from fpdf import FPDF
+import pandas as pd
+import streamlit as st
 
 # Impostazione della pagina
 st.set_page_config(page_title="Condominio Orchidea", layout="wide", page_icon="🌺")
@@ -195,6 +195,10 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs(
 with tab1:
     st.header("1. Inserisci una Nuova Spesa nell'Archivio")
 
+    # Inizializzazione stato salvataggio per evitare doppi click
+    if "spesa_salvata" not in st.session_state:
+        st.session_state["spesa_salvata"] = False
+
     tipo_spesa = st.selectbox(
         "Seleziona Tipo di Spesa:",
         [
@@ -307,31 +311,41 @@ with tab1:
             f"💡 Spesa ripartita su **{divisore_calcolato}** condomini attivi. (Quota singola: **€ {importo_totale_finale / divisore_calcolato:.2f}**)"
         )
 
-    if st.button("💾 Salva Spesa in Archivio", type="primary"):
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
-        c.execute(
-            """INSERT INTO spese (tipo, descrizione, num_fattura, data_spesa, periodo_dal, periodo_al, importo_totale, commissione, dettagli_json, reportata, note_pagamento, num_condomini_divisore, esclusi_json)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)""",
-            (
-                tipo_spesa,
-                descrizione_spesa,
-                num_fattura,
-                data_spesa.strftime("%d/%m/%Y"),
-                periodo_dal.strftime("%d/%m/%Y"),
-                periodo_al.strftime("%d/%m/%Y"),
-                importo_totale_finale,
-                costo_commissione,
-                str(dettagli_extra),
-                note_pagamento,
-                divisore_calcolato,
-                str(esclusi_list),
-            ),
-        )
-        conn.commit()
-        conn.close()
-        st.success(f"✅ Spesa '{descrizione_spesa}' salvata in archivio!")
-        st.rerun()
+    # ==========================================
+    # GESTIONE SALVATAGGIO SICURO (ANTI-DOPPIO CLICK)
+    # ==========================================
+    if st.session_state["spesa_salvata"]:
+        st.success("✅ Spesa salvata in archivio con successo!")
+        if st.button("➕ Inserisci un'altra spesa", type="secondary"):
+            st.session_state["spesa_salvata"] = False
+            st.rerun()
+    else:
+        if st.button("💾 Salva Spesa in Archivio", type="primary"):
+            if not st.session_state["spesa_salvata"]:
+                st.session_state["spesa_salvata"] = True
+                conn = sqlite3.connect(DB_FILE)
+                c = conn.cursor()
+                c.execute(
+                    """INSERT INTO spese (tipo, descrizione, num_fattura, data_spesa, periodo_dal, periodo_al, importo_totale, commissione, dettagli_json, reportata, note_pagamento, num_condomini_divisore, esclusi_json)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)""",
+                    (
+                        tipo_spesa,
+                        descrizione_spesa,
+                        num_fattura,
+                        data_spesa.strftime("%d/%m/%Y"),
+                        periodo_dal.strftime("%d/%m/%Y"),
+                        periodo_al.strftime("%d/%m/%Y"),
+                        importo_totale_finale,
+                        costo_commissione,
+                        str(dettagli_extra),
+                        note_pagamento,
+                        divisore_calcolato,
+                        str(esclusi_list),
+                    ),
+                )
+                conn.commit()
+                conn.close()
+                st.rerun()
 
 # ==========================================
 # TAB 2: ARCHIVIO & MODIFICA SPESE
@@ -624,7 +638,11 @@ with tab3:
     if not df_filtrato.empty:
         st.subheader("Seleziona quali spese includere in QUESTO report:")
 
-        df_filtrato["Includi"] = True
+        # ==========================================
+        # MODIFICA: Spunta solo le spese non ancora reportate
+        # ==========================================
+        df_filtrato["Includi"] = df_filtrato["reportata"] == 0
+
         df_filtrato["Data Reg."] = df_filtrato["data_spesa"].apply(formatta_data_ita)
         df_filtrato["Stato"] = df_filtrato["reportata"].apply(
             lambda x: "⚠️ GIÀ REPORTATA" if x == 1 else "🟢 NUOVA"
