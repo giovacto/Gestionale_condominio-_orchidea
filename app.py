@@ -206,29 +206,27 @@ with tab1:
             "Luce / Acqua / Utenze Comuni",
             "Spesa Varie (Scontrini/Pulizie/Giardino)",
         ],
-        key=f"tipo_spesa_{reset_id}"
+        key=f"tipo_spesa_{reset_id}",
     )
 
     col1, col2 = st.columns(2)
     with col1:
         num_fattura = st.text_input(
-            "N° Fattura / Ricevuta (opzionale)",
-            value="",
-            key=f"num_fattura_{reset_id}"
+            "N° Fattura / Ricevuta (opzionale)", value="", key=f"num_fattura_{reset_id}"
         )
         data_spesa = st.date_input(
-            "Data di Registrazione/Emissione", 
-            datetime.now(), 
+            "Data di Registrazione/Emissione",
+            datetime.now(),
             format="DD/MM/YYYY",
-            key=f"data_spesa_{reset_id}"
+            key=f"data_spesa_{reset_id}",
         )
 
     with col2:
         descrizione_spesa = st.text_input(
-            "Descrizione / Note", 
-            value="", 
+            "Descrizione / Note",
+            value="",
             placeholder="Es. Bolletta Luce Scale, Pulizia Giardino...",
-            key=f"desc_spesa_{reset_id}"
+            key=f"desc_spesa_{reset_id}",
         )
         importo_fattura = st.number_input(
             "Importo Fattura/Scontrino (€)",
@@ -236,7 +234,7 @@ with tab1:
             value=0.0,
             step=10.0,
             format="%.2f",
-            key=f"imp_fattura_{reset_id}"
+            key=f"imp_fattura_{reset_id}",
         )
 
     st.markdown("---")
@@ -244,17 +242,17 @@ with tab1:
     col_per1, col_per2 = st.columns(2)
     with col_per1:
         periodo_dal = st.date_input(
-            "Periodo Consumo - Dal:", 
-            datetime.now(), 
+            "Periodo Consumo - Dal:",
+            datetime.now(),
             format="DD/MM/YYYY",
-            key=f"per_dal_{reset_id}"
+            key=f"per_dal_{reset_id}",
         )
     with col_per2:
         periodo_al = st.date_input(
-            "Periodo Consumo - Al:", 
-            datetime.now(), 
+            "Periodo Consumo - Al:",
+            datetime.now(),
             format="DD/MM/YYYY",
-            key=f"per_al_{reset_id}"
+            key=f"per_al_{reset_id}",
         )
 
     st.markdown("---")
@@ -270,13 +268,13 @@ with tab1:
                 "PagoPA (+ € 1,00)",
                 "Altra Commissione Personalizzata",
             ],
-            key=f"metodo_pag_{reset_id}"
+            key=f"metodo_pag_{reset_id}",
         )
         note_pagamento = st.text_input(
             "Riferimento Pagamento Fattura (CRO / TRN / PagoPA / Note)",
             value="",
             placeholder="Es. CRO: 1234567890123456",
-            key=f"note_pag_{reset_id}"
+            key=f"note_pag_{reset_id}",
         )
 
     with col_p2:
@@ -290,7 +288,7 @@ with tab1:
                 value=1.00,
                 step=0.50,
                 format="%.2f",
-                key=f"comm_custom_{reset_id}"
+                key=f"comm_custom_{reset_id}",
             )
         else:
             costo_commissione = 0.00
@@ -312,7 +310,10 @@ with tab1:
             {"Condomino": list_condomini, "Perc_Utilizzo": [0.0] * len(list_condomini)}
         )
         edited_tele = st.data_editor(
-            df_tele, hide_index=True, use_container_width=True, key=f"editor_nuova_spesa_{reset_id}"
+            df_tele,
+            hide_index=True,
+            use_container_width=True,
+            key=f"editor_nuova_spesa_{reset_id}",
         )
         dettagli_extra = dict(
             zip(edited_tele["Condomino"], edited_tele["Perc_Utilizzo"])
@@ -324,7 +325,7 @@ with tab1:
             options=list_condomini,
             default=[],
             help="I condomini selezionati non pagheranno questa spesa. L'importo verrà diviso in parti uguali solo tra i rimanenti.",
-            key=f"esclusi_{reset_id}"
+            key=f"esclusi_{reset_id}",
         )
         attivi = [c for c in list_condomini if c not in esclusi_list]
         divisore_calcolato = len(attivi) if len(attivi) > 0 else 1
@@ -341,7 +342,9 @@ with tab1:
     else:
         if st.button("💾 Salva Spesa in Archivio", type="primary"):
             if importo_fattura <= 0 and tipo_spesa != "Teleriscaldamento":
-                st.warning("⚠️ Inserisci un importo maggiore di € 0.00 prima di salvare!")
+                st.warning(
+                    "⚠️ Inserisci un importo maggiore di € 0.00 prima di salvare!"
+                )
             elif not st.session_state["spesa_salvata"]:
                 st.session_state["spesa_salvata"] = True
                 conn = sqlite3.connect(DB_FILE)
@@ -638,7 +641,10 @@ with tab2:
                     conn = sqlite3.connect(DB_FILE)
                     c = conn.cursor()
                     c.execute("DELETE FROM spese WHERE id = ?", (id_spesa_sel,))
-                    c.execute("DELETE FROM incassi_spesa_condomino WHERE spesa_id = ?", (id_spesa_sel,))
+                    c.execute(
+                        "DELETE FROM incassi_spesa_condomino WHERE spesa_id = ?",
+                        (id_spesa_sel,),
+                    )
                     conn.commit()
                     conn.close()
                     st.warning("🗑️ Spesa eliminata!")
@@ -648,18 +654,22 @@ with tab2:
         st.info("Nessuna spesa salvata in archivio.")
 
 # ==========================================
-# TAB 3: GENERAZIONE REPORT
+# TAB 3: GENERAZIONE REPORT PERSONALIZZATO CONDOMINO
 # ==========================================
 with tab3:
-    st.header("3. Genera Report e Seleziona Spese da Includere")
+    st.header("3. 📑 Genera Report Personalizzato e Stampa Avviso Condomino")
+    st.info(
+        "Seleziona le spese/fatture che desideri addebitare in questo report. Il sistema calcolerà in automatico l'importo per ogni singola fattura in base alle ripartizioni salvate e genererà il PDF finale con il totale."
+    )
 
     conn = sqlite3.connect(DB_FILE)
     df_filtrato = pd.read_sql_query("SELECT * FROM spese ORDER BY id DESC", conn)
     conn.close()
 
     if not df_filtrato.empty:
-        st.subheader("Seleziona quali spese includere in QUESTO report:")
+        st.subheader("1. Seleziona le Spese/Fatture da Includere nel Report:")
 
+        # Di default suggerisce le spese non ancora inserite in altri report
         df_filtrato["Includi"] = df_filtrato["reportata"] == 0
 
         df_filtrato["Data Reg."] = df_filtrato["data_spesa"].apply(formatta_data_ita)
@@ -688,7 +698,7 @@ with tab3:
             column_config={
                 "num_fattura": st.column_config.TextColumn("N° Fattura"),
                 "importo_totale": st.column_config.NumberColumn(
-                    "Totale (€)", format="€ %.2f"
+                    "Totale Spesa (€)", format="€ %.2f"
                 ),
             },
             disabled=[
@@ -702,12 +712,16 @@ with tab3:
                 "Stato",
             ],
             hide_index=True,
+            key="editor_report_personalizzato",
         )
 
         spese_selezionate_ids = edited_spese_rep[edited_spese_rep["Includi"] == True][
             "id"
         ].tolist()
         spese_scelte_df = df_filtrato[df_filtrato["id"].isin(spese_selezionate_ids)]
+
+        st.markdown("---")
+        st.subheader("2. Impostazioni Intestazione e Condomino")
 
         lista_descrizioni = (
             spese_scelte_df["descrizione"].unique().tolist()
@@ -720,19 +734,20 @@ with tab3:
             else "Prospetto Spese Condominiali"
         )
 
-        st.markdown("---")
         col_c1, col_c2 = st.columns(2)
         with col_c1:
             condomino_sel = (
-                st.selectbox("Seleziona Condomino per il PDF:", list_condomini)
+                st.selectbox("Seleziona Condomino per la Stampa PDF:", list_condomini)
                 if list_condomini
                 else None
             )
             periodo_testo = st.text_input(
-                "Dicitura Intestazione per PDF:", value=intestazione_automatica
+                "Oggetto / Oggetto dell'Avviso:", value=intestazione_automatica
             )
         with col_c2:
-            mostra_scad = st.checkbox("Inserisci Data Scadenza?", value=False)
+            mostra_scad = st.checkbox(
+                "Inserisci Data di Scadenza Pagamento?", value=True
+            )
             scad_val = (
                 st.date_input(
                     "Data Scadenza", datetime.now(), format="DD/MM/YYYY"
@@ -744,7 +759,7 @@ with tab3:
         totale_condomino = 0.0
         dettagli_pdf = []
 
-        if condomino_sel:
+        if condomino_sel and not spese_scelte_df.empty:
             for idx, row in spese_scelte_df.iterrows():
                 imp = row["importo_totale"]
                 t_spesa = row["tipo"]
@@ -761,14 +776,12 @@ with tab3:
                 except Exception:
                     esclusi_spesa = []
 
-                str_periodo = (
-                    f"\nPeriodo: dal {p_dal} al {p_al}" if p_dal and p_al else ""
-                )
-                str_fattura = f"\nRif. {n_fatt}" if n_fatt else ""
+                str_periodo = f" (Dal {p_dal} al {p_al})" if p_dal and p_al else ""
+                str_fattura = f" - Fattura N° {n_fatt}" if n_fatt else ""
 
-                note_desc = row["descrizione"] + str_fattura + str_periodo
+                note_desc = f"{row['descrizione']}{str_fattura}{str_periodo}"
                 if comm > 0:
-                    note_desc += f"\n[comm. EUR {comm:.2f}]"
+                    note_desc += f" [incl. comm. EUR {comm:.2f}]"
 
                 if t_spesa == "Teleriscaldamento":
                     dett_perc = {}
@@ -788,7 +801,7 @@ with tab3:
                         dettagli_pdf.append(
                             (
                                 pulisci_testo_pdf(note_desc),
-                                "Esente da questa spesa",
+                                "Esente (Quota 0)",
                                 0.0,
                             )
                         )
@@ -797,19 +810,20 @@ with tab3:
                         dettagli_pdf.append(
                             (
                                 pulisci_testo_pdf(note_desc),
-                                f"Paritaria (1/{divisore_spesa})",
+                                f"Quota 1/{divisore_spesa}",
                                 q,
                             )
                         )
                         totale_condomino += q
 
+            st.markdown("---")
             st.markdown(
-                f"### Importo Dovuto per {condomino_sel}: **€ {totale_condomino:.2f}**"
+                f"### 💰 Totale Calcolato per **{condomino_sel}**: **€ {totale_condomino:.2f}**"
             )
 
             col_btn1, col_btn2 = st.columns(2)
             with col_btn1:
-                if st.button("👁️ Genera e Visualizza Anteprima PDF", type="primary"):
+                if st.button("👁️ Genera Report PDF Stampabile", type="primary"):
 
                     class PDFRicevuta(FPDF):
                         def header(self):
@@ -848,18 +862,20 @@ with tab3:
                     )
                     pdf.ln(8)
 
+                    # Tabella intestazione
                     pdf.set_fill_color(44, 62, 80)
                     pdf.set_text_color(255, 255, 255)
                     pdf.set_font("Helvetica", "B", 9.5)
-                    pdf.cell(
-                        105, 8, " Dettaglio Servizio, Fattura e Periodo", fill=True
-                    )
+                    pdf.cell(105, 8, " Dettaglio Spesa / Fattura / Periodo", fill=True)
                     pdf.cell(45, 8, " Criterio", fill=True)
-                    pdf.cell(40, 8, " Quota (EUR)", fill=True, ln=True, align="R")
+                    pdf.cell(
+                        40, 8, " Quota Spettante (EUR)", fill=True, ln=True, align="R"
+                    )
 
                     pdf.set_text_color(50, 50, 50)
                     pdf.set_font("Helvetica", "", 9)
 
+                    # Ciclo per singola fattura selezionata
                     for item in dettagli_pdf:
                         y_inizio = pdf.get_y()
                         pdf.set_xy(10, y_inizio)
@@ -880,6 +896,7 @@ with tab3:
                         pdf.line(10, y_max, 200, y_max)
                         pdf.set_y(y_max + 3)
 
+                    # Totale in fondo al PDF
                     pdf.ln(8)
                     pdf.set_fill_color(234, 242, 248)
                     pdf.rect(110, pdf.get_y(), 90, 22, style="F")
@@ -903,11 +920,11 @@ with tab3:
                     pdf_output_bytes = bytes(pdf.output())
                     st.session_state["pdf_pronto"] = pdf_output_bytes
                     st.session_state["pdf_nome_file"] = (
-                        f"Ricevuta_{condomino_sel.replace(' ', '_')}.pdf"
+                        f"Report_{condomino_sel.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pdf"
                     )
 
             with col_btn2:
-                if st.button("🔒 Segna spese come 'GIÀ REPORTATE'"):
+                if st.button("🔒 Segna le spese selezionate come 'GIÀ REPORTATE'"):
                     conn = sqlite3.connect(DB_FILE)
                     c = conn.cursor()
                     for sp_id in spese_selezionate_ids:
@@ -921,15 +938,19 @@ with tab3:
 
             if "pdf_pronto" in st.session_state and st.session_state["pdf_pronto"]:
                 st.markdown("---")
-                st.subheader("📄 Anteprima del Documento PDF")
+                st.subheader("📄 Anteprima del Report PDF Personalizzato")
                 mostra_pdf_in_anteprima(st.session_state["pdf_pronto"])
                 st.download_button(
-                    label="💾 Scarica e Salva PDF sul Computer",
+                    label="💾 Scarica e Stampa PDF",
                     data=st.session_state["pdf_pronto"],
                     file_name=st.session_state["pdf_nome_file"],
                     mime="application/pdf",
                     type="primary",
                 )
+        elif spese_scelte_df.empty:
+            st.warning(
+                "⚠️ Seleziona almeno una spesa/fattura dalla tabella in alto per generare il report."
+            )
     else:
         st.info("Nessuna spesa trovata in archivio.")
 
@@ -952,10 +973,13 @@ with tab4:
         for _, sp in df_spese_all.iterrows():
             sp_id = sp["id"]
             incassi_sp = df_incassi_all[df_incassi_all["spesa_id"] == sp_id]
-            
+
             # Se ci sono record incasso per tutti i condomini e sono tutti pagati/esenti
             if not incassi_sp.empty and len(incassi_sp) >= len(list_condomini):
-                tutti_pagati = all((row["pagato"] == 1 or row["esente"] == 1) for _, row in incassi_sp.iterrows())
+                tutti_pagati = all(
+                    (row["pagato"] == 1 or row["esente"] == 1)
+                    for _, row in incassi_sp.iterrows()
+                )
                 map_spesa_completata[sp_id] = tutti_pagati
             else:
                 map_spesa_completata[sp_id] = False
@@ -966,33 +990,43 @@ with tab4:
         col_f1, col_f2 = st.columns([2, 1])
         with col_f2:
             mostra_tutte = st.checkbox(
-                "👁️ Mostra anche le spese GIÀ SALDATE da tutti", 
+                "👁️ Mostra anche le spese GIÀ SALDATE da tutti",
                 value=False,
-                help="Di default vengono mostrate solo le spese che hanno ancora incassi in sospeso."
+                help="Di default vengono mostrate solo le spese che hanno ancora incassi in sospeso.",
             )
 
         # Filtriamo le spese in base al pulsante
         if mostra_tutte:
             spese_visibili_df = df_spese_all
         else:
-            spese_visibili_df = df_spese_all[df_spese_all["id"].isin(spese_da_saldare_ids)]
+            spese_visibili_df = df_spese_all[
+                df_spese_all["id"].isin(spese_da_saldare_ids)
+            ]
             if spese_visibili_df.empty:
-                st.success("🎉 Tutte le spese in archivio risultano completamente saldate!")
-                spese_visibili_df = df_spese_all # Fallback per mostrare comunque la lista
+                st.success(
+                    "🎉 Tutte le spese in archivio risultano completamente saldate!"
+                )
+                spese_visibili_df = (
+                    df_spese_all  # Fallback per mostrare comunque la lista
+                )
 
         # Mappatura opzioni per la SelectBox
         opzioni_spese_dict = {}
         for _, sp in spese_visibili_df.iterrows():
-            stato_icona = "✅ SALDATA" if map_spesa_completata.get(sp["id"], False) else "⏳ IN INCASSO"
-            n_fatt_str = f" Fatt. {sp['num_fattura']}" if sp['num_fattura'] else ""
+            stato_icona = (
+                "✅ SALDATA"
+                if map_spesa_completata.get(sp["id"], False)
+                else "⏳ IN INCASSO"
+            )
+            n_fatt_str = f" Fatt. {sp['num_fattura']}" if sp["num_fattura"] else ""
             label = f"ID {sp['id']} - {sp['descrizione']}{n_fatt_str} (€ {sp['importo_totale']:.2f}) [{sp['data_spesa']}] - {stato_icona}"
             opzioni_spese_dict[label] = sp["id"]
 
         st.subheader("1. Seleziona la Spesa da Incassare")
         spesa_incasso_label = st.selectbox(
-            "Seleziona Spesa:", 
+            "Seleziona Spesa:",
             list(opzioni_spese_dict.keys()),
-            key="select_spesa_incasso"
+            key="select_spesa_incasso",
         )
 
         spesa_incasso_id = opzioni_spese_dict[spesa_incasso_label]
@@ -1019,9 +1053,13 @@ with tab4:
                 pass
 
         # Recuperiamo gli incassi già salvati per questa spesa
-        df_incassi_spesa = df_incassi_all[df_incassi_all["spesa_id"] == spesa_incasso_id]
+        df_incassi_spesa = df_incassi_all[
+            df_incassi_all["spesa_id"] == spesa_incasso_id
+        ]
 
-        st.markdown(f"#### 📄 Incassi per: **{spesa_obj['descrizione']}** (Importo Totale: **€ {imp_spesa:.2f}**)")
+        st.markdown(
+            f"#### 📄 Incassi per: **{spesa_obj['descrizione']}** (Importo Totale: **€ {imp_spesa:.2f}**)"
+        )
         st.markdown("---")
 
         col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([2.5, 1, 1.2, 1, 3.5])
@@ -1041,33 +1079,66 @@ with tab4:
                 p = float(dett_tele_p.get(c_nome, 0.0))
                 q_calc = (p / 100.0) * imp_spesa
             else:
-                q_calc = 0.0 if c_nome in esclusi_sp else (imp_spesa / divisore_sp_if_valid if (divisore_sp_if_valid := (divisore_sp if divisore_sp > 0 else 1)) else 0)
+                q_calc = (
+                    0.0
+                    if c_nome in esclusi_sp
+                    else (
+                        imp_spesa / divisore_sp_if_valid
+                        if (
+                            divisore_sp_if_valid := (
+                                divisore_sp if divisore_sp > 0 else 1
+                            )
+                        )
+                        else 0
+                    )
+                )
 
             # Recupero dati da DB se esistono
-            r_db = df_incassi_spesa[df_incassi_spesa["condomino"] == c_nome] if not df_incassi_spesa.empty else pd.DataFrame()
-            
+            r_db = (
+                df_incassi_spesa[df_incassi_spesa["condomino"] == c_nome]
+                if not df_incassi_spesa.empty
+                else pd.DataFrame()
+            )
+
             is_pag = bool(r_db.iloc[0]["pagato"]) if not r_db.empty else False
-            is_ese = bool(r_db.iloc[0]["esente"]) if not r_db.empty else (c_nome in esclusi_sp or q_calc == 0.0)
-            note_val_db = str(r_db.iloc[0]["note_incasso"] or "") if not r_db.empty else ""
+            is_ese = (
+                bool(r_db.iloc[0]["esente"])
+                if not r_db.empty
+                else (c_nome in esclusi_sp or q_calc == 0.0)
+            )
+            note_val_db = (
+                str(r_db.iloc[0]["note_incasso"] or "") if not r_db.empty else ""
+            )
 
             col_r1, col_r2, col_r3, col_r4, col_r5 = st.columns([2.5, 1, 1.2, 1, 3.5])
 
             col_r1.write(f"**{c_nome}**")
-            esente_val = col_r2.checkbox("", value=is_ese, key=f"sp_ese_{spesa_incasso_id}_{idx}")
-            
+            esente_val = col_r2.checkbox(
+                "", value=is_ese, key=f"sp_ese_{spesa_incasso_id}_{idx}"
+            )
+
             quota_fin = 0.00 if esente_val else round(q_calc, 2)
             col_r3.write(f"€ {quota_fin:.2f}")
 
-            saldato_val = col_r4.checkbox("", value=is_pag, key=f"sp_sal_{spesa_incasso_id}_{idx}")
-            note_val = col_r5.text_input("", value=note_val_db, key=f"sp_not_{spesa_incasso_id}_{idx}", label_visibility="collapsed")
+            saldato_val = col_r4.checkbox(
+                "", value=is_pag, key=f"sp_sal_{spesa_incasso_id}_{idx}"
+            )
+            note_val = col_r5.text_input(
+                "",
+                value=note_val_db,
+                key=f"sp_not_{spesa_incasso_id}_{idx}",
+                label_visibility="collapsed",
+            )
 
-            nuovi_dati_spesa_incassata.append({
-                "condomino": c_nome,
-                "quota": quota_fin,
-                "esente": esente_val,
-                "saldato": saldato_val,
-                "note": note_val
-            })
+            nuovi_dati_spesa_incassata.append(
+                {
+                    "condomino": c_nome,
+                    "quota": quota_fin,
+                    "esente": esente_val,
+                    "saldato": saldato_val,
+                    "note": note_val,
+                }
+            )
 
             tot_dovuto_spesa += quota_fin
             if saldato_val:
@@ -1079,9 +1150,17 @@ with tab4:
         c_m1, c_m2, c_m3 = st.columns(3)
         c_m1.metric("Totale Spesa", f"€ {tot_dovuto_spesa:.2f}")
         c_m2.metric("Incassato per questa spesa", f"€ {tot_incassato_spesa:.2f}")
-        c_m3.metric("Rimanente da Incassare", f"€ {tot_rimanente_spesa:.2f}", delta=-tot_rimanente_spesa if tot_rimanente_spesa > 0 else 0)
+        c_m3.metric(
+            "Rimanente da Incassare",
+            f"€ {tot_rimanente_spesa:.2f}",
+            delta=-tot_rimanente_spesa if tot_rimanente_spesa > 0 else 0,
+        )
 
-        if st.button("💾 Salva Incassi per Questa Spesa", type="primary", key="btn_salva_incasso_spesa"):
+        if st.button(
+            "💾 Salva Incassi per Questa Spesa",
+            type="primary",
+            key="btn_salva_incasso_spesa",
+        ):
             conn = sqlite3.connect(DB_FILE)
             c = conn.cursor()
             for item in nuovi_dati_spesa_incassata:
@@ -1112,11 +1191,11 @@ with tab4:
         # ==========================================
         st.markdown("---")
         st.subheader("2. 📊 Vista Storico Pagamenti per Singolo Condomino")
-        
+
         condomino_storico_sel = st.selectbox(
-            "Seleziona un Condomino per vedere tutto la sua situazione storica:", 
+            "Seleziona un Condomino per vedere tutto la sua situazione storica:",
             list_condomini,
-            key="select_condomino_storico"
+            key="select_condomino_storico",
         )
 
         if condomino_storico_sel:
@@ -1129,7 +1208,7 @@ with tab4:
                 imp_s = float(sp["importo_totale"])
                 t_s = sp["tipo"]
                 div_s = int(sp.get("num_condomini_divisore", 6) or 6)
-                
+
                 escl_s = []
                 try:
                     if sp.get("esclusi_json"):
@@ -1147,25 +1226,44 @@ with tab4:
                     p = float(d_t.get(condomino_storico_sel, 0.0))
                     q_c = (p / 100.0) * imp_s
                 else:
-                    q_c = 0.0 if condomino_storico_sel in escl_s else (imp_s / (div_s if div_s > 0 else 1))
+                    q_c = (
+                        0.0
+                        if condomino_storico_sel in escl_s
+                        else (imp_s / (div_s if div_s > 0 else 1))
+                    )
 
                 # Stato dal DB
-                r_inc = df_incassi_all[(df_incassi_all["spesa_id"] == s_id) & (df_incassi_all["condomino"] == condomino_storico_sel)]
+                r_inc = df_incassi_all[
+                    (df_incassi_all["spesa_id"] == s_id)
+                    & (df_incassi_all["condomino"] == condomino_storico_sel)
+                ]
                 is_p = bool(r_inc.iloc[0]["pagato"]) if not r_inc.empty else False
-                is_e = bool(r_inc.iloc[0]["esente"]) if not r_inc.empty else (condomino_storico_sel in escl_s or q_c == 0.0)
-                n_i = str(r_inc.iloc[0]["note_incasso"] or "") if not r_inc.empty else ""
+                is_e = (
+                    bool(r_inc.iloc[0]["esente"])
+                    if not r_inc.empty
+                    else (condomino_storico_sel in escl_s or q_c == 0.0)
+                )
+                n_i = (
+                    str(r_inc.iloc[0]["note_incasso"] or "") if not r_inc.empty else ""
+                )
 
                 quota_effettiva = 0.00 if is_e else round(q_c, 2)
-                
-                righe_storico_condomino.append({
-                    "ID Spesa": s_id,
-                    "Data Emissione": sp["data_spesa"],
-                    "Descrizione Spesa": sp["descrizione"],
-                    "N° Fattura": sp["num_fattura"],
-                    "Quota Dovuta (€)": quota_effettiva,
-                    "Stato Pagamento": "🟢 SALDATO" if is_p else ("⚪ ESENTE" if is_e else "🔴 DA SALDARE"),
-                    "Rif. / Note Versamento": n_i
-                })
+
+                righe_storico_condomino.append(
+                    {
+                        "ID Spesa": s_id,
+                        "Data Emissione": sp["data_spesa"],
+                        "Descrizione Spesa": sp["descrizione"],
+                        "N° Fattura": sp["num_fattura"],
+                        "Quota Dovuta (€)": quota_effettiva,
+                        "Stato Pagamento": (
+                            "🟢 SALDATO"
+                            if is_p
+                            else ("⚪ ESENTE" if is_e else "🔴 DA SALDARE")
+                        ),
+                        "Rif. / Note Versamento": n_i,
+                    }
+                )
 
                 if not is_e:
                     tot_dovuto_cond += quota_effettiva
@@ -1176,17 +1274,21 @@ with tab4:
             tot_da_versare_cond = tot_dovuto_cond - tot_versato_cond
 
             st.markdown(f"#### Situazione Contabile per **{condomino_storico_sel}**")
-            
+
             st.dataframe(
                 df_storico_cond,
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "Quota Dovuta (€)": st.column_config.NumberColumn("Quota Dovuta (€)", format="€ %.2f")
-                }
+                    "Quota Dovuta (€)": st.column_config.NumberColumn(
+                        "Quota Dovuta (€)", format="€ %.2f"
+                    )
+                },
             )
 
-            st.info(f"💰 Totale Dovuto Storico: **€ {tot_dovuto_cond:.2f}** | Totale Già Versato: **€ {tot_versato_cond:.2f}** | Rimanente da Pagare: **€ {tot_da_versare_cond:.2f}**")
+            st.info(
+                f"💰 Totale Dovuto Storico: **€ {tot_dovuto_cond:.2f}** | Totale Già Versato: **€ {tot_versato_cond:.2f}** | Rimanente da Pagare: **€ {tot_da_versare_cond:.2f}**"
+            )
 
     else:
         st.info("Nessuna spesa trovata in archivio.")
