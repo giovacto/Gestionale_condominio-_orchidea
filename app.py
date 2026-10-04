@@ -791,11 +791,22 @@ with tab3:
                     except Exception:
                         dett_perc = {}
                     perc = float(dett_perc.get(condomino_sel, 0.0))
+
                     q = (perc / 100.0) * imp
+                    q_arrotondato = round(
+                        q, 2
+                    )  # <--- MODIFICA: Arrotondiamo subito a 2 decimali
+
                     dettagli_pdf.append(
-                        (pulisci_testo_pdf(note_desc), f"Consumi ({perc:.1f}%)", q)
+                        (
+                            pulisci_testo_pdf(note_desc),
+                            f"Consumi ({perc:.1f}%)",
+                            q_arrotondato,
+                        )
                     )
-                    totale_condomino += q
+                    totale_condomino += (
+                        q_arrotondato  # <--- MODIFICA: Sommiamo l'importo arrotondato
+                    )
                 else:
                     if condomino_sel in esclusi_spesa:
                         dettagli_pdf.append(
@@ -807,14 +818,18 @@ with tab3:
                         )
                     else:
                         q = imp / divisore_spesa if divisore_spesa > 0 else 0
+                        q_arrotondato = round(
+                            q, 2
+                        )  # <--- MODIFICA: Arrotondiamo subito a 2 decimali
+
                         dettagli_pdf.append(
                             (
                                 pulisci_testo_pdf(note_desc),
                                 f"Quota 1/{divisore_spesa}",
-                                q,
+                                q_arrotondato,
                             )
                         )
-                        totale_condomino += q
+                        totale_condomino += q_arrotondato  # <--- MODIFICA: Sommiamo l'importo arrotondato
 
             st.markdown("---")
             st.markdown(
